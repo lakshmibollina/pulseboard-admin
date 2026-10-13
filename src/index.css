@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Smooth theme transitions */
+body,
+.card-surface,
+.sidebar-surface,
+.topbar-surface {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+/* Recharts focus outline polish */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+/* Slim scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.5) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.5);
+  border-radius: 8px;
+}
