@@ -121,6 +121,10 @@ export const customers = Array.from({ length: 40 }, (_, i) => {
 });
 
 // --------------------------------- KPIs -----------------------------------
+// Anchors are window-independent; kpisForRange(R) re-derives every KPI from
+// the selected window so the 7D/30D/90D switcher drives the KPI cards too.
+// For R = 30 every ratio below is exactly 1, so the default view is
+// unchanged.
 
 const last30 = dailyMetrics.slice(-30);
 const prev30 = dailyMetrics.slice(-60, -30);
@@ -137,45 +141,59 @@ const trialing = customers.filter((c) => c.status === 'trialing').length;
 const converted = customers.filter((c) => c.status === 'active' && c.plan !== 'Starter').length;
 const trialConversion = (converted / Math.max(trialing + converted, 1)) * 100;
 
-export const kpis = [
-  {
-    id: 'mrr',
-    label: 'Monthly recurring revenue',
-    value: totalMrr,
-    format: (v) => `$${Math.round(v).toLocaleString('en-US')}`,
-    delta: pct(sum(last30, 'revenue') / 30, sum(prev30, 'revenue') / 30),
-    spark: dailyMetrics.slice(-14).map((d) => d.revenue),
-    note: 'vs. previous 30 days',
-  },
-  {
-    id: 'users',
-    label: 'Active users',
-    value: activeUsers,
-    format: (v) => Math.round(v).toLocaleString('en-US'),
-    delta: pct(avg(last30, 'users'), avg(prev30, 'users')),
-    spark: dailyMetrics.slice(-14).map((d) => d.users),
-    note: 'daily active, last 30 days',
-  },
-  {
-    id: 'churn',
-    label: 'Churn rate',
-    value: churnRate,
-    format: (v) => `${v.toFixed(1)}%`,
-    delta: -pct(avg(last30, 'signups'), avg(prev30, 'signups')) / 4,
-    invert: true, // a drop in churn is good
-    spark: dailyMetrics.slice(-14).map((d) => 4.4 - d.signups / 220),
-    note: 'accounts churned / total',
-  },
-  {
-    id: 'trial',
-    label: 'Trial conversion',
-    value: trialConversion,
-    format: (v) => `${v.toFixed(1)}%`,
-    delta: pct(avg(last30, 'signups'), avg(prev30, 'signups')) / 6,
-    spark: dailyMetrics.slice(-14).map((d) => 18 + d.signups / 90),
-    note: 'trial to paid, trailing 90 days',
-  },
-];
+export function kpisForRange(R) {
+  const cur = dailyMetrics.slice(-R);
+  // Compare against the preceding window; for 90D (longer than half the
+  // series) compare the two halves of the visible window instead.
+  const prev = R <= 45 ? dailyMetrics.slice(-2 * R, -R) : dailyMetrics.slice(-90, -45);
+
+  // Window intensity relative to the 30-day baseline — 1 when R === 30.
+  const revRatio = avg(cur, 'revenue') / avg(last30, 'revenue');
+  const userRatio = avg(cur, 'users') / avg(last30, 'users');
+  const signupRatio = avg(cur, 'signups') / avg(last30, 'signups');
+
+  return [
+    {
+      id: 'mrr',
+      label: 'Monthly recurring revenue',
+      value: totalMrr * revRatio,
+      format: (v) => `$${Math.round(v).toLocaleString('en-US')}`,
+      delta: pct(avg(cur, 'revenue'), avg(prev, 'revenue')),
+      spark: cur.slice(-14).map((d) => d.revenue),
+      note: `vs. previous ${R} days`,
+    },
+    {
+      id: 'users',
+      label: 'Active users',
+      value: activeUsers * userRatio,
+      format: (v) => Math.round(v).toLocaleString('en-US'),
+      delta: pct(avg(cur, 'users'), avg(prev, 'users')),
+      spark: cur.slice(-14).map((d) => d.users),
+      note: `daily active, last ${R} days`,
+    },
+    {
+      id: 'churn',
+      label: 'Churn rate',
+      value: churnRate * (1 + (1 - signupRatio) * 0.5),
+      format: (v) => `${v.toFixed(1)}%`,
+      delta: -pct(avg(cur, 'signups'), avg(prev, 'signups')) / 4,
+      invert: true, // a drop in churn is good
+      spark: cur.slice(-14).map((d) => 4.4 - d.signups / 220),
+      note: 'accounts churned / total',
+    },
+    {
+      id: 'trial',
+      label: 'Trial conversion',
+      value: trialConversion * (1 + (signupRatio - 1) * 0.5),
+      format: (v) => `${v.toFixed(1)}%`,
+      delta: pct(avg(cur, 'signups'), avg(prev, 'signups')) / 6,
+      spark: cur.slice(-14).map((d) => 18 + d.signups / 90),
+      note: 'trial to paid, trailing 90 days',
+    },
+  ];
+}
+
+export const kpis = kpisForRange(30);
 
 // --------------------------------- Nav ------------------------------------
 

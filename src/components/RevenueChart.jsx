@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Area,
@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import AnimatedNumber from './AnimatedNumber';
 import { dailyMetrics } from '../data/metrics';
 
 const RANGES = [
@@ -33,9 +34,7 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
-export default function RevenueChart() {
-  const [range, setRange] = useState(30);
-
+export default function RevenueChart({ range, onRangeChange }) {
   const data = useMemo(() => dailyMetrics.slice(-range), [range]);
   const total = data.reduce((a, b) => a + b.revenue, 0);
 
@@ -52,9 +51,11 @@ export default function RevenueChart() {
             Revenue
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            <span className="font-display font-bold tabular-nums text-slate-800 dark:text-slate-100">
-              ${total.toLocaleString('en-US')}
-            </span>{' '}
+            <AnimatedNumber
+              value={total}
+              format={(v) => `$${Math.round(v).toLocaleString('en-US')}`}
+              className="font-display font-bold tabular-nums text-slate-800 dark:text-slate-100"
+            />{' '}
             collected in the last {range} days
           </p>
         </div>
@@ -71,7 +72,7 @@ export default function RevenueChart() {
               role="tab"
               aria-selected={range === r.id}
               type="button"
-              onClick={() => setRange(r.id)}
+              onClick={() => onRangeChange(r.id)}
               className={[
                 'relative rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors',
                 range === r.id
@@ -94,7 +95,9 @@ export default function RevenueChart() {
 
       <div className="mt-4 h-72 w-full sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart key={range} data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          {/* No key={range} here on purpose: recharts tweens the Area between
+              datasets on a range switch instead of remounting with a snap. */}
+          <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#6366f1" stopOpacity={0.32} />
@@ -126,6 +129,8 @@ export default function RevenueChart() {
               strokeWidth={2.5}
               fill="url(#revenueFill)"
               activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }}
+              animationDuration={750}
+              animationEasing="ease-out"
             />
           </AreaChart>
         </ResponsiveContainer>

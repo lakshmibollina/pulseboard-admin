@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Line, LineChart, ResponsiveContainer } from 'recharts';
+import AnimatedNumber from './AnimatedNumber';
 import { Icons } from './icons';
 
 export default function KpiCard({ label, value, format, delta, spark, note, invert = false, delay = 0 }) {
@@ -31,7 +32,7 @@ export default function KpiCard({ label, value, format, delta, spark, note, inve
       </div>
 
       <p className="mt-2 font-display text-[2rem] font-bold leading-none tracking-tight text-slate-900 tabular-nums dark:text-white">
-        {format(value)}
+        <AnimatedNumber value={value} format={format} />
       </p>
 
       <div className="mt-3 flex items-end justify-between gap-3">

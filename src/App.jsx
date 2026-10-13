@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -6,13 +6,46 @@ import KpiCard from './components/KpiCard';
 import RevenueChart from './components/RevenueChart';
 import ChannelChart from './components/ChannelChart';
 import DataTable from './components/DataTable';
-import { kpis, navItems } from './data/metrics';
+import CommandPalette from './components/CommandPalette';
+import { kpisForRange, navItems } from './data/metrics';
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [page, setPage] = useState('overview');
   const [search, setSearch] = useState('');
+  const [range, setRange] = useState(30);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // The 7D/30D/90D switcher drives both the revenue chart and the KPI cards.
+  const kpis = useMemo(() => kpisForRange(range), [range]);
+
+  // Cmd+K / Ctrl+K toggles the command palette.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const handleSelectNav = useCallback((id) => {
+    setPage(id);
+    setMobileOpen(false);
+    setPaletteOpen(false);
+  }, []);
+
+  // Selecting a customer filters the customers table to them (the table
+  // lives on the overview page, so we navigate there too).
+  const handleSelectCustomer = useCallback((customer) => {
+    setSearch(customer.name);
+    setPage('overview');
+    setMobileOpen(false);
+    setPaletteOpen(false);
+  }, []);
 
   const sidebarOffset = collapsed ? 'lg:pl-[76px]' : 'lg:pl-[248px]';
 
@@ -33,6 +66,7 @@ export default function App() {
           search={search}
           onSearchChange={setSearch}
           onMenuClick={() => setMobileOpen(true)}
+          onOpenPalette={() => setPaletteOpen(true)}
         />
 
         <AnimatePresence mode="wait">
@@ -56,7 +90,7 @@ export default function App() {
                 {/* Charts row */}
                 <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
                   <div className="xl:col-span-2">
-                    <RevenueChart />
+                    <RevenueChart range={range} onRangeChange={setRange} />
                   </div>
                   <ChannelChart />
                 </div>
@@ -70,6 +104,13 @@ export default function App() {
           </motion.main>
         </AnimatePresence>
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onSelectNav={handleSelectNav}
+        onSelectCustomer={handleSelectCustomer}
+      />
     </div>
   );
 }

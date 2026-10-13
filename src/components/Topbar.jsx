@@ -10,7 +10,7 @@ const PAGE_TITLES = {
   settings: { title: 'Settings', subtitle: 'Workspace, team and integrations' },
 };
 
-export default function Topbar({ page, search, onSearchChange, onMenuClick }) {
+export default function Topbar({ page, search, onSearchChange, onMenuClick, onOpenPalette }) {
   const meta = PAGE_TITLES[page] ?? PAGE_TITLES.overview;
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'short',
@@ -18,6 +18,7 @@ export default function Topbar({ page, search, onSearchChange, onMenuClick }) {
     day: 'numeric',
     year: 'numeric',
   });
+  const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform ?? '');
 
   return (
     <header className="topbar-surface sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
@@ -45,6 +46,20 @@ export default function Topbar({ page, search, onSearchChange, onMenuClick }) {
         </div>
 
         <div className="flex-1" />
+
+        {/* Command palette trigger */}
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          aria-label="Open command palette (Ctrl or Cmd K)"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white/70 py-2.5 pl-3 pr-2 text-sm text-slate-400 shadow-card backdrop-blur transition hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-slate-600 dark:hover:text-slate-300"
+        >
+          <Icons.search className="h-4 w-4" />
+          <span className="hidden lg:inline">Search…</span>
+          <kbd className="hidden rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400 md:inline-block">
+            {isMac ? '⌘K' : 'Ctrl K'}
+          </kbd>
+        </button>
 
         {/* Search — filters the customers table */}
         <label className="relative hidden w-64 md:block lg:w-80">

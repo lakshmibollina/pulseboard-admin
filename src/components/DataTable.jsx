@@ -41,10 +41,12 @@ export default function DataTable({ search }) {
   const [sortKey, setSortKey] = useState('signupTs');
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(0);
+  const [selectedId, setSelectedId] = useState(null);
 
   // Reset to first page whenever the filter changes
   useEffect(() => {
     setPage(0);
+    setSelectedId(null);
   }, [search]);
 
   const filtered = useMemo(() => customers.filter((c) => matches(c, search)), [search]);
@@ -138,21 +140,29 @@ export default function DataTable({ search }) {
                   </th>
                 );
               })}
+              {/* Row-action affordance column */}
+              <th scope="col" className="w-14 px-2" aria-label="Row actions" />
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-slate-100 transition-colors last:border-0 hover:bg-indigo-50/50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+                onClick={() => setSelectedId((s) => (s === row.id ? null : row.id))}
+                aria-pressed={selectedId === row.id}
+                className={[
+                  'group cursor-pointer border-b border-slate-100 transition-colors duration-200 last:border-0',
+                  'hover:bg-indigo-50/60 dark:border-slate-800 dark:hover:bg-slate-800/60',
+                  selectedId === row.id ? 'bg-indigo-50/80 dark:bg-indigo-500/10' : '',
+                ].join(' ')}
               >
                 <td className="px-4 py-3.5 sm:px-6">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 font-display text-xs font-bold text-indigo-700 dark:from-indigo-500/20 dark:to-violet-500/20 dark:text-indigo-300">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 font-display text-xs font-bold text-indigo-700 transition-transform duration-200 group-hover:scale-110 dark:from-indigo-500/20 dark:to-violet-500/20 dark:text-indigo-300">
                       {row.name.split(' ').map((w) => w[0]).join('')}
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-800 dark:text-slate-100">{row.name}</p>
+                      <p className="truncate font-semibold text-slate-800 transition-colors duration-200 group-hover:text-indigo-700 dark:text-slate-100 dark:group-hover:text-indigo-300">{row.name}</p>
                       <p className="truncate text-xs text-slate-500 dark:text-slate-400">{row.company}</p>
                     </div>
                   </div>
@@ -182,11 +192,25 @@ export default function DataTable({ search }) {
                 <td className="whitespace-nowrap px-4 py-3.5 text-slate-600 dark:text-slate-300 sm:px-6">
                   {row.country}
                 </td>
+                <td className="px-2 py-3.5">
+                  <span
+                    className={[
+                      'flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-all duration-200',
+                      'hover:bg-indigo-100 hover:text-indigo-600 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-300',
+                      selectedId === row.id
+                        ? 'translate-x-0 bg-indigo-100 text-indigo-600 opacity-100 dark:bg-indigo-500/20 dark:text-indigo-300'
+                        : '-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100',
+                    ].join(' ')}
+                    aria-hidden="true"
+                  >
+                    <Icons.chevronRight className="h-4 w-4" />
+                  </span>
+                </td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={COLUMNS.length} className="px-6 py-12 text-center">
+                <td colSpan={COLUMNS.length + 1} className="px-6 py-12 text-center">
                   <p className="font-display text-sm font-semibold text-slate-700 dark:text-slate-200">
                     No customers match your search
                   </p>
